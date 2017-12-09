@@ -1,4 +1,5 @@
 const vm = require('vm');
+const url = require('url');
 const fetchUrl = require('./fetch-url');
 const debug = require('debug')('loki:chrome:fetchStorybook');
 const getBrowserGlobals = require('./get-browser-globals');
@@ -11,13 +12,13 @@ async function createStorybookSandbox(baseUrl) {
   const scripts = browser.document.querySelectorAll('script[src]');
   const previewSrc = Array.from(scripts)
     .map(node => node.attributes.src.nodeValue)
-    .filter(src => src.match(/preview\.([a-f0-9]+\.)?bundle\.js/) !== -1)[0];
+    .find(src => src.match(/preview\.([a-f0-9]{20}\.)?bundle\.js$/));
 
   if (!previewSrc) {
     throw new Error('Unable to locate preview bundle');
   }
 
-  const bundle = await fetchUrl(`${baseUrl}/${previewSrc}`);
+  const bundle = await fetchUrl(url.resolve(baseUrl, previewSrc));
 
   debug('Creating js sandbox');
   const sandbox = vm.createContext(browser);
